@@ -6,3 +6,6 @@ node_modules/
 # System files
 .DS_Store
 Thumbs.db
+
+# Antigravity AI 設定檔（本機專用，不上傳）
+.agents/
