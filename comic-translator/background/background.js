@@ -243,13 +243,17 @@ async function processBatch(items, targetLang) {
 
   // 3. 呼叫 Gemini 多圖批次 API
   let attempts = 0;
-  let rawBoxes = [];
+  let rawBoxes = null;
+  let lastCapturedError = null;
 
   while (attempts < Math.max(3, keys.length * 2)) {
     attempts++;
     const pick = pickAvailableKey(keys);
 
     if (!pick.key) {
+      if (attempts >= keys.length) {
+        break;
+      }
       await sleep(1500);
       continue;
     }
@@ -260,15 +264,21 @@ async function processBatch(items, targetLang) {
       await markKeyStatus(pick.key, 'valid');
       break;
     } catch (err) {
+      lastCapturedError = err;
       if (err.type === 'rate_limit' || err.type === 'exhausted') {
         const cdSec = err.retryAfterSeconds || 35;
-        console.warn(`[ComicTranslator] Key #${pick.index + 1} 觸發限制，冷卻 ${cdSec} 秒`);
+        console.warn(`[ComicTranslator] Key #${pick.index + 1} 觸發限制 (${err.message})，冷卻 ${cdSec} 秒`);
         keyCooldowns.set(pick.key, Date.now() + cdSec * 1000);
         await markKeyStatus(pick.key, err.type);
         continue;
       }
       throw err;
     }
+  }
+
+  if (rawBoxes === null) {
+    const errorMsg = lastCapturedError?.message || '所有 API Key 額度已用完或請求過快，請稍候重試或新增 Key';
+    throw new Error(errorMsg);
   }
 
   // 4. 將回傳的 boxes 依照 imageIndex 分配並存入快取

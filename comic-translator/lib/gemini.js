@@ -11,9 +11,13 @@ const INTERACTIONS_API_URL = 'https://generativelanguage.googleapis.com/v1beta/i
 const GENERATE_CONTENT_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 const MULTI_MODEL_POOL = [
-  'gemini-3.6-flash',
-  'gemini-2.5-flash',
-  'gemini-2.5-flash-lite',
+  'gemini-3.6-flash',       // 主力：最新 3.6 世代
+  'gemini-3.7-flash',       // 備援 1：最新 3.7 世代
+  'gemini-3.5-flash',       // 備援 2：3.5 穩定版
+  'gemini-3.5-flash-lite',  // 備援 3：3.5 輕量版（超省配額）
+  'gemini-3.1-flash-lite',  // 備援 4：3.1 輕量版
+  'gemini-3-flash',         // 備援 5：3.0 世代
+  'gemini-omni-flash',      // 備援 6：Omni 多模態
 ];
 
 let currentModelIndex = 0;
@@ -128,15 +132,16 @@ function parseBoxCoordinates(item) {
 export async function detectAndTranslateMultiImages(apiKey, imagesList, targetLang) {
   const langName = LANG_NAMES[targetLang] || '繁體中文';
 
-  const prompt = `你是專業漫畫在地化翻譯與視覺對白偵測專家。請分析這 ${imagesList.length} 張漫畫圖片，精準定位每張圖片中的所有對話框 (Speech Bubbles & Narration Boxes)，並將台詞翻譯成${langName}。
+  const prompt = `你是專業漫畫在地化翻譯與視覺對白偵測專家。請分析這 ${imagesList.length} 張漫畫圖片，精準定位每張圖片中的所有對話框與旁白文字，並將台詞翻譯成${langName}。
 
 【辨識規範】：
 1. 請針對每張圖片分別標記，使用 image_index (0 到 ${imagesList.length - 1}) 區分對應的圖片。
-2. 針對圖片內的每個對話氣泡，輸出其在該張圖片內的 0~1000 歸一化座標 [ymin, xmin, ymax, xmax]（0 為最頂/最左，1000 為最底/最右）。
-3. 嚴格忽略擬聲詞、背景效果音（如 ドン、ドドド、쾅、Crash、BAM、Ahhh 等狀聲詞一律略過）。
-4. 提取原文 (original_text) 並翻譯成自然的${langName} (translation)。
-5. 判斷排版方向 (direction): "vertical" (直排) 或 "horizontal" (橫排)。
-6. 若某張圖沒有對話框，該圖不需回傳項目。
+2. 涵蓋所有對白框類型：一般氣泡、方形旁白框、黑色陰影/放射狀發光情緒框 (Burst / Glow Bubbles)、多角尖刺呼喊框 (Jagged Shout Bubbles)、以及被切片裁切的邊界氣泡。只要框內有角色對白或台詞句子，一律必須 100% 定位並翻譯。
+3. 針對圖片內的每個對話氣泡，輸出其在該張圖片內的 0~1000 歸一化座標 [ymin, xmin, ymax, xmax]（0 為最頂/最左，1000 為最底/最右）。
+4. 僅略過純粹的背景狀聲擬音詞（如 ドン、ドドド、쾅、Crash、BAM、Ahhh 等音效特效）。若狀聲詞外圍是正式對白氣泡則仍須翻譯。
+5. 提取原文 (original_text) 並翻譯成自然的${langName} (translation)。
+6. 判斷排版方向 (direction): "vertical" (直排) 或 "horizontal" (橫排)。
+7. 若某張圖確實沒有任何對白或文字框，該圖不需回傳項目。
 
 請直接回傳純 JSON 陣列格式：
 [
@@ -189,10 +194,8 @@ async function callGeminiWithModelPool(apiKey, prompt, imagesList) {
       currentModelIndex = (modelIdx + 1) % MULTI_MODEL_POOL.length;
       return result;
     } catch (err) {
-      if (err.type === 'auth') throw err;
-
-      if (err.type === 'rate_limit' || err.type === 'exhausted' || err.code === 404) {
-        console.warn(`[ComicTranslator] 模型 ${modelName} 達到限制 (${err.message})，自動切換下一個模型...`);
+      if (err.type === 'rate_limit' || err.type === 'exhausted' || err.code === 404 || err.message?.includes('no longer available')) {
+        console.warn(`[ComicTranslator] 模型 ${modelName} 無法使用 (${err.message})，自動切換下一個模型...`);
         lastError = err;
         continue;
       }

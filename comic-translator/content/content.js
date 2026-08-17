@@ -143,7 +143,16 @@ function scanImages() {
   const result = [];
 
   imgs.forEach(img => {
-    if (processedImages.has(img) || pendingImages.has(img)) return;
+    // 正在翻譯中，跳過
+    if (pendingImages.has(img)) return;
+
+    // 只有真正翻譯成功且具備翻譯狀態的圖片才跳過
+    if (img._comicTransState === 'done') {
+      const record = imageOverlayMap.get(img);
+      const hasBlocks = record?.containerEl?.querySelector('.comic-text-block');
+      if (hasBlocks) return;
+    }
+
     resolveImageSrc(img);
     if (isComicImage(img)) {
       result.push(img);
@@ -199,7 +208,7 @@ async function translateAllImages() {
 }
 
 async function translateBatchNative(imgBatch) {
-  const unhandled = imgBatch.filter(img => !processedImages.has(img) && !pendingImages.has(img));
+  const unhandled = imgBatch.filter(img => !pendingImages.has(img));
   if (unhandled.length === 0 || isTranslatingAborted) return;
 
   unhandled.forEach(img => {
@@ -251,6 +260,7 @@ async function translateBatchNative(imgBatch) {
   } catch (e) {
     if (!isTranslatingAborted) {
       console.warn('[ComicTranslator 批次異常]:', e.message);
+      showNotification(e.message, 'error');
       unhandled.forEach(img => showErrorOnImage(img, e.message));
     } else {
       unhandled.forEach(removeOverlay);
