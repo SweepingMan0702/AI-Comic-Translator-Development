@@ -1,0 +1,175 @@
+/**
+ * content.css - Overlay Layer 樣式
+ * 1. 支援「橫排」與「直排 (vertical)」排版
+ * 2. 圓內接矩形自適應對話框
+ * 3. 雙擊左鍵即時編輯文字 (contenteditable) 與自由拖曳
+ */
+
+/* 獨立浮動層容器 */
+.comic-translator-overlay-container {
+  position: absolute !important;
+  pointer-events: none !important;
+  z-index: 2147483640 !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+/* 對白氣泡文字框（基礎樣式） */
+.comic-text-block {
+  position: absolute !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  box-sizing: border-box !important;
+  padding: 3px 5px !important;
+  
+  /* 純白實心對白框 */
+  background: #ffffff !important;
+  border-radius: 6px !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22), 0 0 1px rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  
+  /* 文字設定 */
+  color: #000000 !important;
+  font-family: 'Noto Sans TC', 'Microsoft JhengHei', 'PingFang TC', -apple-system, sans-serif !important;
+  font-weight: 700 !important;
+  line-height: 1.28 !important;
+  letter-spacing: 0.02em !important;
+  
+  word-break: break-word !important;
+  white-space: pre-wrap !important;
+  overflow: hidden !important;
+  user-select: text !important;
+  
+  /* 拖曳與互動 */
+  pointer-events: auto !important;
+  cursor: grab !important;
+  touch-action: none !important;
+  transition: box-shadow 0.15s ease, opacity 0.15s ease, border-color 0.15s ease !important;
+}
+
+/* 橫排與直排 */
+.comic-text-block.horizontal {
+  writing-mode: horizontal-tb !important;
+}
+
+.comic-text-block.vertical {
+  writing-mode: vertical-rl !important;
+  text-orientation: upright !important;
+  letter-spacing: 0.06em !important;
+  line-height: 1.35 !important;
+}
+
+.comic-text-block:active {
+  cursor: grabbing !important;
+  box-shadow: 0 4px 12px rgba(66, 133, 244, 0.4) !important;
+  border-color: #4285f4 !important;
+  z-index: 2147483646 !important;
+}
+
+.comic-text-block:hover:not(.editing) {
+  opacity: 0.25 !important;
+}
+.comic-text-block:active {
+  opacity: 1 !important;
+}
+
+/* 編輯模式 (雙擊進入) */
+.comic-text-block.editing {
+  cursor: text !important;
+  outline: none !important;
+  border-color: #4285f4 !important;
+  box-shadow: 0 0 0 2.5px rgba(66, 133, 244, 0.35) !important;
+  background: #ffffff !important;
+  opacity: 1 !important;
+  user-select: all !important;
+  z-index: 2147483647 !important;
+}
+
+/* 載入中指示器 */
+.comic-translation-loading {
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  width: 24px !important;
+  height: 24px !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 2147483645 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+}
+
+.comic-translation-loading::after {
+  content: '' !important;
+  width: 12px !important;
+  height: 12px !important;
+  border: 2px solid #4285f4 !important;
+  border-top-color: transparent !important;
+  border-radius: 50% !important;
+  animation: comic-spin 0.8s linear infinite !important;
+}
+
+@keyframes comic-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 額度用完或錯誤標籤 */
+.comic-translation-quota-badge {
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  background: #ea4335 !important;
+  color: #ffffff !important;
+  font-size: 11px !important;
+  font-family: 'Noto Sans TC', sans-serif !important;
+  font-weight: 700 !important;
+  padding: 3px 8px !important;
+  border-radius: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  z-index: 2147483645 !important;
+  box-shadow: 0 2px 6px rgba(234, 67, 53, 0.35) !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  white-space: nowrap !important;
+}
+
+.comic-translation-quota-badge:hover {
+  background: #d93025 !important;
+  transform: scale(1.05) !important;
+}
+
+/* 完成微型提示 */
+.comic-translation-done {
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  width: 22px !important;
+  height: 22px !important;
+  background: #34a853 !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 2147483645 !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important;
+  font-size: 12px !important;
+  color: #ffffff !important;
+  font-weight: bold !important;
+  opacity: 0 !important;
+  animation: comic-done-fade 1.8s ease forwards !important;
+}
+
+@keyframes comic-done-fade {
+  0% { opacity: 1; transform: scale(1); }
+  60% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.8); }
+}
