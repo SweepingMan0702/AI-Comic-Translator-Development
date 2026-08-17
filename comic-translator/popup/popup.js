@@ -25,6 +25,9 @@ const statPending       = document.getElementById('statPending');
 const statApiCalls      = document.getElementById('statApiCalls');
 const statCacheHits     = document.getElementById('statCacheHits');
 
+const modelPoolGrid     = document.getElementById('modelPoolGrid');
+const modelPoolBadge    = document.getElementById('modelPoolBadge');
+
 let currentKeys = [];
 let keyStatuses = {};
 
@@ -302,6 +305,8 @@ async function updateStats() {
     statApiCalls.textContent = bgStats.apiCalls || 0;
     statCacheHits.textContent = bgStats.cacheHits || 0;
 
+    if (bgStats.modelPool) renderModelPool(bgStats.modelPool);
+
     const tab = await getActiveTab();
     if (tab?.id) {
       chrome.tabs.sendMessage(tab.id, { type: 'GET_PAGE_STATS' }, (res) => {
@@ -311,6 +316,28 @@ async function updateStats() {
       });
     }
   } catch {}
+}
+
+/** 渲染模型池狀態欄 */
+function renderModelPool({ models, currentIndex }) {
+  if (!models || models.length === 0) return;
+  modelPoolBadge.textContent = `${models.length} 個模型`;
+  modelPoolGrid.innerHTML = '';
+  models.forEach((name, i) => {
+    const chip = document.createElement('div');
+    chip.className = `model-chip${i === currentIndex ? ' active' : ''}`;
+    // 縮短顯示名稱：gemini-3.6-flash -> 3.6 Flash
+    const label = name
+      .replace('gemini-', '')
+      .replace('-flash-lite', ' Flash Lite')
+      .replace('-flash', ' Flash')
+      .replace('-omni', ' Omni')
+      .replace(/^(\d)/, (_, d) => d)  // 保留版本號
+      .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    chip.innerHTML = `<span class="model-chip-dot"></span>${label}`;
+    chip.title = name + (i === currentIndex ? '（目前使用中）' : '');
+    modelPoolGrid.appendChild(chip);
+  });
 }
 
 function resetStats() {

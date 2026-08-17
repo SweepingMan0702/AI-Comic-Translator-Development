@@ -10,7 +10,7 @@ import { logErrorToStorage, markKeyStatus } from './storage.js';
 const INTERACTIONS_API_URL = 'https://generativelanguage.googleapis.com/v1beta/interactions';
 const GENERATE_CONTENT_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 
-const MULTI_MODEL_POOL = [
+export const MULTI_MODEL_POOL = [
   'gemini-3.6-flash',       // 主力：最新 3.6 世代
   'gemini-3.7-flash',       // 備援 1：最新 3.7 世代
   'gemini-3.5-flash',       // 備援 2：3.5 穩定版
@@ -21,6 +21,15 @@ const MULTI_MODEL_POOL = [
 ];
 
 let currentModelIndex = 0;
+
+/** 回傳目前模型池狀態，供外部查詢 */
+export function getModelPoolStatus() {
+  return {
+    models: MULTI_MODEL_POOL,
+    currentIndex: currentModelIndex,
+    currentModel: MULTI_MODEL_POOL[currentModelIndex],
+  };
+}
 
 const LANG_NAMES = {
   'zh-TW': '繁體中文',

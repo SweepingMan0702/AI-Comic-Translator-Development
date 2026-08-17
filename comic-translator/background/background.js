@@ -2,7 +2,7 @@
  * background.js - Service Worker (多 Key 平行調度與原生多圖批次佇列)
  */
 
-import { detectAndTranslateMultiImages, testSingleApiKey, GeminiError } from '../lib/gemini.js';
+import { detectAndTranslateMultiImages, testSingleApiKey, GeminiError, getModelPoolStatus } from '../lib/gemini.js';
 import { 
   getCachedTranslation, 
   setCachedTranslation, 
@@ -112,7 +112,8 @@ async function handleMessage(msg, sender) {
         ...stats, 
         totalKeys: keys.length, 
         activeKeys,
-        pendingQueue: taskQueue.length
+        pendingQueue: taskQueue.length,
+        modelPool: getModelPoolStatus(),
       };
     }
 

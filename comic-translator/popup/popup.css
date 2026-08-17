@@ -519,3 +519,91 @@ body {
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== Model Pool Section ===== */
+.model-pool-section {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  padding: 10px 12px;
+}
+
+.model-pool-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.model-pool-icon { font-size: 13px; }
+
+.model-pool-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--on-surface);
+  flex: 1;
+}
+
+.model-pool-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: #e8f0fe;
+  color: var(--primary-dark);
+}
+
+.model-pool-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.model-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1.5px solid var(--border);
+  background: var(--surface-2);
+  color: var(--on-surface-2);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+  user-select: none;
+}
+
+.model-chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ccc;
+  flex-shrink: 0;
+  transition: all 0.25s ease;
+}
+
+/* 目前使用中的模型 - 高亮狀態 */
+.model-chip.active {
+  background: linear-gradient(135deg, #e8f0fe 0%, #d2e3fc 100%);
+  border-color: var(--primary);
+  color: var(--primary-dark);
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(66,133,244,0.2);
+}
+
+.model-chip.active .model-chip-dot {
+  background: var(--primary);
+  box-shadow: 0 0 0 3px rgba(66,133,244,0.25);
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(66,133,244,0.25); }
+  50%       { box-shadow: 0 0 0 4px rgba(66,133,244,0.10); }
+}
+
