@@ -16,8 +16,6 @@ export const MULTI_MODEL_POOL = [
   'gemini-3.5-flash',       // 備援 2：3.5 穩定版
   'gemini-3.5-flash-lite',  // 備援 3：3.5 輕量版（超省配額）
   'gemini-3.1-flash-lite',  // 備援 4：3.1 輕量版
-  'gemini-3-flash',         // 備援 5：3.0 世代
-  'gemini-omni-flash',      // 備援 6：Omni 多模態
 ];
 
 let currentModelIndex = 0;
@@ -143,20 +141,32 @@ export async function detectAndTranslateMultiImages(apiKey, imagesList, targetLa
 
   const prompt = `你是專業漫畫在地化翻譯與視覺對白偵測專家。請分析這 ${imagesList.length} 張漫畫圖片，精準定位每張圖片中的所有對話框與旁白文字，並將台詞翻譯成${langName}。
 
-【辨識規範】：
-1. 請針對每張圖片分別標記，使用 image_index (0 到 ${imagesList.length - 1}) 區分對應的圖片。
-2. 涵蓋所有對白框類型：一般氣泡、方形旁白框、黑色陰影/放射狀發光情緒框 (Burst / Glow Bubbles)、多角尖刺呼喊框 (Jagged Shout Bubbles)、以及被切片裁切的邊界氣泡。只要框內有角色對白或台詞句子，一律必須 100% 定位並翻譯。
-3. 針對圖片內的每個對話氣泡，輸出其在該張圖片內的 0~1000 歸一化座標 [ymin, xmin, ymax, xmax]（0 為最頂/最左，1000 為最底/最右）。
-4. 僅略過純粹的背景狀聲擬音詞（如 ドン、ドドド、쾅、Crash、BAM、Ahhh 等音效特效）。若狀聲詞外圍是正式對白氣泡則仍須翻譯。
-5. 提取原文 (original_text) 並翻譯成自然的${langName} (translation)。
-6. 判斷排版方向 (direction): "vertical" (直排) 或 "horizontal" (橫排)。
-7. 若某張圖確實沒有任何對白或文字框，該圖不需回傳項目。
+【標準化座標與辨識規範】：
+1. 圖片索引：使用 image_index (0 到 ${imagesList.length - 1}) 精確標記該對白所屬的圖片。
+2. 座標格式【極重要，必須嚴格遵守】：
+   - 請統一使用 "box_2d": [ymin, xmin, ymax, xmax]，數值為 0 到 1000 的整數。
+   - ymin = 對白氣泡或文字框的最頂端 (Top, 0~1000)
+   - xmin = 對白氣泡或文字框的最左側 (Left, 0~1000)
+   - ymax = 對白氣泡或文字框的最底端 (Bottom, 0~1000)
+   - xmax = 對白氣泡或文字框的最右側 (Right, 0~1000)
+   - 請務必遵守 [Top, Left, Bottom, Right] 順序，確保 ymin < ymax 且 xmin < xmax，嚴禁 X 與 Y 順序顛倒。
+3. 框選目標基準：
+   - 請框選「對話氣泡 (Speech Bubble) 或旁白框的完整外輪廓邊界 (Outer Border)」，而非僅框選文字本體，以確保翻譯覆蓋層能精準貼合氣泡中心。
+4. 對白框類型涵蓋：
+   - 涵蓋所有類型：一般圓橢氣泡、方形旁白框、黑色陰影/放射狀情緒框 (Burst / Glow Bubbles)、尖刺呼喊框 (Jagged Bubbles)、以及被切片裁切的邊緣殘缺氣泡。
+5. 排除純音效：
+   - 僅略過無外框的純背景狀聲擬音詞（如 ドン、ドドド、쾅、Crash、BAM 等），若音效外圍有對白氣泡或屬台詞則仍須翻譯。
+6. 排版方向 (direction)：
+   - 直排文字標記 "vertical"，橫排文字標記 "horizontal"。
+7. 原文與翻譯：
+   - original_text: 提取對白原文
+   - translation: 翻譯成自然的${langName}
 
-請直接回傳純 JSON 陣列格式：
+請嚴格回傳純 JSON 陣列，不包含額外文字或解釋：
 [
   {
     "image_index": 0,
-    "box_2d": [550, 150, 850, 600],
+    "box_2d": [120, 350, 260, 580],
     "original_text": "살려둘 필요는 없다",
     "translation": "不需要留活口",
     "direction": "horizontal"
@@ -203,7 +213,18 @@ async function callGeminiWithModelPool(apiKey, prompt, imagesList) {
       currentModelIndex = (modelIdx + 1) % MULTI_MODEL_POOL.length;
       return result;
     } catch (err) {
-      if (err.type === 'rate_limit' || err.type === 'exhausted' || err.code === 404 || err.message?.includes('no longer available')) {
+      const isUnavailable = err.type === 'rate_limit' || err.type === 'exhausted' || err.code === 404 || err.message?.includes('no longer available');
+      
+      // 寫入本地除錯日誌，記錄模型不可用或報錯詳情
+      await logErrorToStorage('MODEL_FAILOVER', {
+        model: modelName,
+        status: err.code || err.type || 'error',
+        reason: err.message,
+        action: isUnavailable ? '自動切換下一個模型' : '拋出例外',
+        time: new Date().toLocaleTimeString(),
+      });
+
+      if (isUnavailable) {
         console.warn(`[ComicTranslator] 模型 ${modelName} 無法使用 (${err.message})，自動切換下一個模型...`);
         lastError = err;
         continue;
@@ -215,6 +236,13 @@ async function callGeminiWithModelPool(apiKey, prompt, imagesList) {
   if (lastError?.type === 'exhausted') {
     await markKeyStatus(apiKey, 'exhausted');
   }
+
+  await logErrorToStorage('ALL_MODELS_FAILED', {
+    triedModels: MULTI_MODEL_POOL,
+    lastError: lastError?.message || '未知錯誤',
+    time: new Date().toLocaleTimeString(),
+  });
+
   throw lastError || new GeminiError('所有模型均呼叫失敗', 0, 'unknown');
 }
 

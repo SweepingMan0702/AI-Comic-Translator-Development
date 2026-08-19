@@ -29,6 +29,7 @@ const statCacheHits     = document.getElementById('statCacheHits');
 
 const modelPoolGrid     = document.getElementById('modelPoolGrid');
 const modelPoolBadge    = document.getElementById('modelPoolBadge');
+const themeToggleBtn    = document.getElementById('themeToggleBtn');
 
 let currentKeys = [];
 let keyStatuses = {};
@@ -36,8 +37,33 @@ let keyStatuses = {};
 // ===== 初始化 =====
 
 async function init() {
+  initTheme();
   await loadSettings();
   startStatsPolling();
+}
+
+function initTheme() {
+  chrome.storage.local.get(['theme'], (res) => {
+    const isDark = res.theme === 'dark';
+    applyTheme(isDark);
+  });
+
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', () => {
+      const isDark = !document.body.classList.contains('theme-dark');
+      applyTheme(isDark);
+      chrome.storage.local.set({ theme: isDark ? 'dark' : 'light' });
+    });
+  }
+}
+
+function applyTheme(isDark) {
+  document.body.classList.toggle('theme-dark', isDark);
+  if (themeToggleBtn) {
+    const icon = themeToggleBtn.querySelector('.theme-icon');
+    if (icon) icon.textContent = isDark ? '☀️' : '🌙';
+    themeToggleBtn.title = isDark ? '切換為淺色模式' : '切換為深色模式';
+  }
 }
 
 async function loadSettings() {
@@ -250,7 +276,10 @@ translateBtn.addEventListener('click', async () => {
 // 停止翻譯按鈕
 stopTranslationBtn.addEventListener('click', async () => {
   try {
-    await bgMessage({ type: 'STOP_TRANSLATION' });
+    await Promise.allSettled([
+      bgMessage({ type: 'STOP_TRANSLATION' }),
+      sendToActiveTab({ type: 'STOP_TRANSLATION' })
+    ]);
     flashStatus('⏹️ 已停止所有翻譯與排隊任務', 'info');
   } catch (e) {
     flashStatus(`錯誤：${e.message}`, 'error');
@@ -276,22 +305,64 @@ clearTransBtn.addEventListener('click', async () => {
   }
 });
 
-// 檢視除錯日誌
+// 檢視除錯日誌 (結構化卡片介面)
 viewLogsBtn.addEventListener('click', async () => {
   try {
     const logs = await bgMessage({ type: 'GET_LOGS' });
     if (!logs || logs.length === 0) {
-      alert('目前沒有任何異常除錯日誌。');
+      alert('目前沒有任何異常除錯日誌（所有模型運作正常或尚未發起請求）。');
       return;
     }
-    const text = JSON.stringify(logs, null, 2);
-    const win = window.open('', '_blank', 'width=650,height=450');
+
+    const logItemsHtml = logs.map(entry => {
+      const type = entry.type || 'INFO';
+      const time = entry.time || '';
+      const d = entry.details || {};
+      
+      let badgeColor = '#4285f4';
+      if (type === 'MODEL_FAILOVER') badgeColor = '#fbbc05';
+      if (type === 'ALL_MODELS_FAILED') badgeColor = '#ea4335';
+
+      let detailsHtml = '';
+      if (typeof d === 'object') {
+        detailsHtml = `
+          <div style="margin-top:6px;font-size:12px;background:#2d2d2d;padding:8px;border-radius:6px;line-height:1.5;">
+            ${d.model ? `<div><strong>🤖 嘗試模型:</strong> <span style="color:#4ec9b0;">${escapeHtml(d.model)}</span></div>` : ''}
+            ${d.status ? `<div><strong>⚠️ 狀態碼/類型:</strong> <span style="color:#e5c07b;">${escapeHtml(d.status)}</span></div>` : ''}
+            ${d.reason ? `<div><strong>❌ 原因說明:</strong> <span style="color:#e06c75;">${escapeHtml(d.reason)}</span></div>` : ''}
+            ${d.action ? `<div><strong>🔄 處置動作:</strong> <span style="color:#98c379;">${escapeHtml(d.action)}</span></div>` : ''}
+            ${d.lastError ? `<div><strong>❌ 最終錯誤:</strong> <span style="color:#e06c75;">${escapeHtml(d.lastError)}</span></div>` : ''}
+          </div>
+        `;
+      } else {
+        detailsHtml = `<pre style="margin-top:4px;white-space:pre-wrap;">${escapeHtml(String(d))}</pre>`;
+      }
+
+      return `
+        <div style="border-bottom:1px solid #333;padding:10px 0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="background:${badgeColor};color:#000;font-weight:bold;padding:2px 6px;border-radius:4px;font-size:11px;">${escapeHtml(type)}</span>
+            <span style="color:#888;font-size:11px;">${escapeHtml(time)}</span>
+          </div>
+          ${detailsHtml}
+        </div>
+      `;
+    }).join('');
+
+    const win = window.open('', '_blank', 'width=700,height=520');
     win.document.write(`
+      <!DOCTYPE html>
       <html>
-      <head><title>Comic Translator 除錯日誌</title></head>
-      <body style="font-family:monospace;font-size:12px;background:#1e1e1e;color:#d4d4d4;padding:16px;margin:0;">
-        <h3 style="color:#4ec9b0;margin-top:0;">📋 本地除錯日誌 (最近 ${logs.length} 筆)</h3>
-        <pre style="white-space:pre-wrap;word-break:break-all;">${escapeHtml(text)}</pre>
+      <head>
+        <meta charset="utf-8">
+        <title>Comic Translator 模型與除錯日誌</title>
+      </head>
+      <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,monospace;background:#1e1e1e;color:#d4d4d4;padding:18px;margin:0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #4ec9b0;padding-bottom:8px;margin-bottom:12px;">
+          <h3 style="color:#4ec9b0;margin:0;">📋 模型調用與除錯日誌 (最近 ${logs.length} 筆)</h3>
+          <span style="font-size:12px;color:#aaa;">即時記錄各模型運作狀態與不可用原因</span>
+        </div>
+        ${logItemsHtml}
       </body>
       </html>
     `);

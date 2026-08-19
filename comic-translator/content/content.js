@@ -54,6 +54,13 @@ async function handleMessage(msg) {
     case 'STOP_TRANSLATION':
       isTranslatingAborted = true;
       document.querySelectorAll('.comic-translation-loading').forEach(el => el.remove());
+      document.querySelectorAll('img').forEach(img => {
+        pendingImages.delete(img);
+        if (img._comicTransState === 'loading') {
+          img._comicTransState = null;
+          removeOverlay(img);
+        }
+      });
       showNotification('⏹️ 已停止所有翻譯任務', 'warning');
       return { success: true };
 
@@ -264,7 +271,7 @@ async function translateBatchNative(imgBatch) {
     });
 
   } catch (e) {
-    if (!isTranslatingAborted) {
+    if (!isTranslatingAborted && !e.message?.includes('停止')) {
       console.warn('[ComicTranslator 批次異常]:', e.message);
       showNotification(e.message, 'error');
       unhandled.forEach(img => showErrorOnImage(img, e.message));

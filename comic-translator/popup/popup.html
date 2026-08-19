@@ -13,11 +13,43 @@
 
     <!-- Header -->
     <header class="header">
-      <div class="header-icon">📖</div>
-      <div class="header-text">
-        <h1>Comic Translator</h1>
-        <p>AI 漫畫即時翻譯</p>
+      <div class="header-left">
+        <img src="../assets/icons/icon128.png" class="header-icon-img" alt="logo">
+        <div class="header-text">
+          <h1>Comic Translator</h1>
+          <p>AI 漫畫即時翻譯</p>
+        </div>
       </div>
+
+      <div class="header-right">
+        <!-- 深色/淺色主題切換 -->
+        <button class="theme-toggle-btn" id="themeToggleBtn" title="切換深色/淺色模式">
+          <span class="theme-icon">🌙</span>
+        </button>
+
+        <!-- 右上角小提示下拉隱藏表 -->
+        <details class="tips-dropdown" id="tipsDropdown">
+          <summary class="tips-btn" title="查看使用小提示">
+            <span>💡 小提示</span>
+            <svg class="tips-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </summary>
+          <div class="tips-menu">
+          <div class="tip-item">
+            <span class="tip-icon">📌</span>
+            <div><strong>若遇到尚未翻譯的圖片</strong>：再次點擊「翻譯本頁漫畫」；若無反應，直接點擊圖片左上方的刷新按鈕（<code class="mini-code">↺</code>）清除快取並重新翻譯。</div>
+          </div>
+          <div class="tip-item">
+            <span class="tip-icon">⚡</span>
+            <div><strong>一開始翻譯很快，後面變慢？</strong>：這是正常現象（畢竟是免費的，Google 有每分鐘頻率限制，系統會安全冷卻排隊）。推薦使用 3 組不同 Project 的 Key，或加入其他帳號的 Key 即可全程高速！</div>
+          </div>
+          <div class="tip-item">
+            <span class="tip-icon">✋</span>
+            <div><strong>對話框位置微調</strong>：對話框可隨意拖曳移動，懸停右上角可拖曳縮放大小，雙擊文字即可自訂編輯修正。</div>
+          </div>
+        </div>
+      </details>
     </header>
 
     <!-- Main content -->
@@ -60,11 +92,16 @@
           </summary>
           <div class="guide-steps-container">
             <ol class="guide-steps">
-              <li>前往 <a href="https://aistudio.google.com/" target="_blank" class="link">Google AI Studio ↗</a></li>
-              <li>登入 Google 帳號</li>
-              <li>點擊左側選單的 <strong>「Get API Key」</strong></li>
-              <li>點擊 <strong>「Create API Key」</strong> 建立金鑰</li>
-              <li>複製金鑰貼入上方欄位即可使用</li>
+              <li>前往 <a href="https://aistudio.google.com/" target="_blank" class="link">Google AI Studio ↗</a> 登入 Google 帳號</li>
+              <li>點擊左側 <strong>「Get API key」</strong> ➜ 點 <strong>「Create API key」</strong></li>
+              <li>選擇 <strong>「Create API key in new project」</strong> 建立獨立專案：
+                <div class="project-examples">
+                  • 第 1 組：專案名稱填 <code>comic 1</code> ➜ 複製 Key<br>
+                  • 第 2 組：專案名稱填 <code>comic 2</code> ➜ 複製 Key<br>
+                  • 第 3 組：專案名稱填 <code>comic 3</code> ➜ 複製 Key
+                </div>
+              </li>
+              <li><strong style="color:var(--primary-dark);">⚡ 提速建議：</strong>推薦使用 3 組不同 Project 的速度才不會那麼慢；若覺得速度不夠，請自行建立其他帳號的三把鑰匙加入！</li>
             </ol>
           </div>
         </details>
