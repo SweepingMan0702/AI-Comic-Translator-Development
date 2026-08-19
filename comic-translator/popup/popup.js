@@ -11,6 +11,8 @@ const apiStatusMsg      = document.getElementById('apiStatusMsg');
 
 const targetLangSel     = document.getElementById('targetLang');
 const autoTransChk      = document.getElementById('autoTranslate');
+const fontScaleInput    = document.getElementById('fontScale');
+const fontScaleVal      = document.getElementById('fontScaleVal');
 
 const translateBtn      = document.getElementById('translatePage');
 const stopTranslationBtn= document.getElementById('stopTranslationBtn');
@@ -46,6 +48,9 @@ async function loadSettings() {
 
   if (res.targetLang) targetLangSel.value = res.targetLang;
   autoTransChk.checked = !!res.autoTranslate;
+  const scale = res.fontScale !== undefined ? res.fontScale : 100;
+  if (fontScaleInput) fontScaleInput.value = scale;
+  if (fontScaleVal) fontScaleVal.textContent = `${scale}%`;
 }
 
 // ===== Key 清單渲染與操作 =====
@@ -196,12 +201,21 @@ async function saveKeysList() {
 targetLangSel.addEventListener('change', autoSaveSettings);
 autoTransChk.addEventListener('change', autoSaveSettings);
 
+if (fontScaleInput) {
+  fontScaleInput.addEventListener('input', () => {
+    if (fontScaleVal) fontScaleVal.textContent = `${fontScaleInput.value}%`;
+  });
+  fontScaleInput.addEventListener('change', autoSaveSettings);
+}
+
 async function autoSaveSettings() {
   try {
+    const scale = fontScaleInput ? parseInt(fontScaleInput.value, 10) : 100;
     await bgMessage({
       type: 'SAVE_SETTINGS',
       targetLang: targetLangSel.value,
       autoTranslate: autoTransChk.checked,
+      fontScale: scale,
     });
   } catch (e) {
     console.error('設定儲存失敗', e);

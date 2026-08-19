@@ -7,6 +7,7 @@ let autoTranslate = false;
 let targetLang = 'zh-TW';
 let hasValidKeys = false;
 let isTranslatingAborted = false;
+let fontScale = 100;
 let observer = null;
 
 const imageOverlayMap = new Map();
@@ -22,6 +23,7 @@ async function init() {
   hasValidKeys = Array.isArray(settings.keys) && settings.keys.length > 0;
   targetLang = settings.targetLang || 'zh-TW';
   autoTranslate = settings.autoTranslate || false;
+  fontScale = settings.fontScale !== undefined ? settings.fontScale : 100;
 
   window.addEventListener('resize', updateAllOverlayPositions, { passive: true });
   window.addEventListener('scroll', updateAllOverlayPositions, { passive: true });
@@ -73,6 +75,10 @@ async function handleMessage(msg) {
     case 'UPDATE_SETTINGS':
       targetLang = msg.targetLang || targetLang;
       autoTranslate = msg.autoTranslate !== undefined ? msg.autoTranslate : autoTranslate;
+      if (msg.fontScale !== undefined) {
+        fontScale = msg.fontScale;
+        applyFontScaleToAllOverlays();
+      }
 
       if (autoTranslate && hasValidKeys) {
         startObserver();
@@ -317,12 +323,35 @@ function createLoadingOverlay(img) {
   img._comicTransState = 'loading';
 }
 
+function createRefreshButton(img, container) {
+  const btn = document.createElement('div');
+  btn.className = 'comic-refresh-btn';
+  btn.title = '重新翻譯此圖片（清除快取）';
+  btn.textContent = '↺';
+  btn.onclick = async (e) => {
+    e.stopPropagation();
+
+    // 先清除該圖片的快取，確保下次是全新 API 請求
+    const url = img.currentSrc || img.src;
+    if (url) {
+      await sendMessage({ type: 'CLEAR_IMAGE_CACHE', url, targetLang }).catch(() => {});
+    }
+
+    processedImages.delete(img);
+    img._comicTransState = null;
+    container.innerHTML = '';
+    translateBatchNative([img]);
+  };
+  container.appendChild(btn);
+}
+
 function showTranslation(img, boxes) {
   const container = getOrCreateOverlayContainer(img);
   container.innerHTML = '';
 
   if (!boxes || boxes.length === 0) {
     img._comicTransState = 'done';
+    createRefreshButton(img, container);
     return;
   }
 
@@ -367,10 +396,14 @@ function showTranslation(img, boxes) {
     const textLen = box.translation.length || 1;
     const boxArea = width * height;
     const estFontSize = Math.sqrt(boxArea / (textLen * 1.3));
-    const fontSize = Math.max(10, Math.min(22, Math.round(estFontSize)));
-    el.style.fontSize = `${fontSize}px`;
+    const baseFontSize = Math.max(10, Math.min(22, Math.round(estFontSize)));
+    el.dataset.baseFontSize = baseFontSize;
+
+    const actualFontSize = Math.max(4, Math.round(baseFontSize * (fontScale / 100)));
+    el.style.fontSize = `${actualFontSize}px`;
 
     makeDraggable(el);
+    makeResizable(el);
     setupEditable(el, textSpan);
 
     container.appendChild(el);
@@ -381,7 +414,18 @@ function showTranslation(img, boxes) {
   done.textContent = '✓';
   container.appendChild(done);
 
+  createRefreshButton(img, container);
+
   img._comicTransState = 'done';
+}
+
+/** 即時套用字體縮放至頁面上所有已翻譯氣泡 */
+function applyFontScaleToAllOverlays() {
+  document.querySelectorAll('.comic-text-block').forEach((el) => {
+    const base = parseFloat(el.dataset.baseFontSize) || 14;
+    const newSize = Math.max(4, Math.round(base * (fontScale / 100)));
+    el.style.fontSize = `${newSize}px`;
+  });
 }
 
 function setupEditable(el, textSpan) {
@@ -433,6 +477,7 @@ function makeDraggable(el) {
   el.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return;
     if (el.classList.contains('editing')) return;
+    if (e.target.classList.contains('comic-resize-handle')) return;
 
     e.preventDefault();
     e.stopPropagation();
@@ -453,6 +498,47 @@ function makeDraggable(el) {
 
     const onMouseUp = () => {
       isDragging = false;
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  });
+}
+
+function makeResizable(el) {
+  const handle = document.createElement('div');
+  handle.className = 'comic-resize-handle';
+  el.appendChild(handle);
+
+  handle.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startW = el.offsetWidth;
+    const startH = el.offsetHeight;
+    const startTop = parseFloat(el.style.top) || 0;
+
+    el.classList.add('resizing');
+
+    const onMouseMove = (moveEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+      // 右上角：向右拉寬，向上拉高（top 跟著移動）
+      const newW = Math.max(40, startW + deltaX);
+      const newH = Math.max(20, startH - deltaY);
+      const newTop = startTop + (startH - newH);
+      el.style.width = `${newW}px`;
+      el.style.height = `${newH}px`;
+      el.style.top = `${newTop}px`;
+    };
+
+    const onMouseUp = () => {
+      el.classList.remove('resizing');
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
     };

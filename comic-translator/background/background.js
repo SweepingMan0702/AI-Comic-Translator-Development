@@ -11,6 +11,7 @@ import {
   getApiKeys,
   setApiKeys,
   clearAllCache,
+  deleteCachedTranslation,
   getLogsFromStorage,
   getKeyStatuses,
   markKeyStatus,
@@ -46,13 +47,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 async function handleMessage(msg, sender) {
   switch (msg.type) {
     case 'GET_SETTINGS': {
-      const [keys, targetLang, autoTranslate, keyStatuses] = await Promise.all([
+      const [keys, targetLang, autoTranslate, fontScale, keyStatuses] = await Promise.all([
         getApiKeys(),
         getSetting('targetLang', 'zh-TW'),
         getSetting('autoTranslate', false),
+        getSetting('fontScale', 100),
         getKeyStatuses(),
       ]);
-      return { keys, targetLang, autoTranslate, keyStatuses };
+      return { keys, targetLang, autoTranslate, fontScale, keyStatuses };
     }
 
     case 'SAVE_KEYS_LIST': {
@@ -62,14 +64,15 @@ async function handleMessage(msg, sender) {
     }
 
     case 'SAVE_SETTINGS': {
-      await setSettings({
-        targetLang: msg.targetLang,
-        autoTranslate: msg.autoTranslate,
-      });
+      const updateObj = {};
+      if (msg.targetLang !== undefined) updateObj.targetLang = msg.targetLang;
+      if (msg.autoTranslate !== undefined) updateObj.autoTranslate = msg.autoTranslate;
+      if (msg.fontScale !== undefined) updateObj.fontScale = msg.fontScale;
+
+      await setSettings(updateObj);
       broadcastToTabs({
         type: 'UPDATE_SETTINGS',
-        targetLang: msg.targetLang,
-        autoTranslate: msg.autoTranslate,
+        ...updateObj,
       });
       return { success: true };
     }
@@ -101,6 +104,19 @@ async function handleMessage(msg, sender) {
 
     case 'CLEAR_CACHE': {
       await clearAllCache();
+      return { success: true };
+    }
+
+    case 'CLEAR_IMAGE_CACHE': {
+      // 刪除單一圖片的快取，讓下次翻譯強制重新請求 API
+      const { url, targetLang: lang } = msg;
+      if (url) {
+        const cacheKey = await getCacheKey(url);
+        if (cacheKey) {
+          const tLang = lang || await getSetting('targetLang', 'zh-TW');
+          await deleteCachedTranslation(cacheKey, tLang);
+        }
+      }
       return { success: true };
     }
 

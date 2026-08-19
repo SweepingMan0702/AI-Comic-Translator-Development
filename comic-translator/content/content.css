@@ -17,6 +17,16 @@
   border: none !important;
 }
 
+/* 當 container 有翻譯內容時，允許 hover 偵測以顯示刷新按鈕 */
+.comic-translator-overlay-container:has(.comic-refresh-btn) {
+  pointer-events: auto !important;
+}
+
+/* container 本身不要攔截點擊，只讓子元素處理 */
+.comic-translator-overlay-container:has(.comic-refresh-btn) > *:not(.comic-refresh-btn):not(.comic-text-block):not(.comic-translation-quota-badge) {
+  pointer-events: none !important;
+}
+
 /* 對白氣泡文字框（基礎樣式） */
 .comic-text-block {
   position: absolute !important;
@@ -172,4 +182,84 @@
   0% { opacity: 1; transform: scale(1); }
   60% { opacity: 1; transform: scale(1); }
   100% { opacity: 0; transform: scale(0.8); }
+}
+
+/* 縮放把手（右上角） */
+.comic-resize-handle {
+  position: absolute !important;
+  top: -5px !important;
+  right: -5px !important;
+  width: 14px !important;
+  height: 14px !important;
+  background: #4285f4 !important;
+  border: 2px solid #ffffff !important;
+  border-radius: 3px !important;
+  cursor: nesw-resize !important;
+  z-index: 2147483647 !important;
+  pointer-events: auto !important;
+  opacity: 0 !important;
+  transition: opacity 0.15s ease, transform 0.15s ease !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3) !important;
+}
+
+.comic-resize-handle::after {
+  content: '' !important;
+  position: absolute !important;
+  inset: 2px !important;
+  border-top: 1.5px solid #fff !important;
+  border-right: 1.5px solid #fff !important;
+  border-radius: 1px !important;
+}
+
+.comic-text-block:hover .comic-resize-handle {
+  opacity: 1 !important;
+}
+
+.comic-text-block.resizing .comic-resize-handle {
+  opacity: 1 !important;
+  transform: scale(1.2) !important;
+}
+
+.comic-text-block.resizing {
+  cursor: nesw-resize !important;
+  box-shadow: 0 0 0 2px #4285f4 !important;
+  opacity: 1 !important;
+  user-select: none !important;
+}
+
+/* 單圖刷新按鈕（左上角，滑鼠懸停顯示） */
+.comic-refresh-btn {
+  position: absolute !important;
+  top: 8px !important;
+  left: 8px !important;
+  width: 26px !important;
+  height: 26px !important;
+  background: rgba(66, 133, 244, 0.88) !important;
+  color: #ffffff !important;
+  font-size: 15px !important;
+  line-height: 26px !important;
+  text-align: center !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  z-index: 2147483646 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
+  opacity: 0 !important;
+  transform: scale(0.8) !important;
+  transition: opacity 0.18s ease, transform 0.18s ease, background 0.15s ease !important;
+  user-select: none !important;
+}
+
+.comic-translator-overlay-container:hover .comic-refresh-btn {
+  opacity: 1 !important;
+  transform: scale(1) !important;
+}
+
+.comic-refresh-btn:hover {
+  background: #1a73e8 !important;
+  transform: scale(1.12) rotate(-20deg) !important;
+}
+
+.comic-refresh-btn:active {
+  transform: scale(0.95) rotate(-30deg) !important;
 }

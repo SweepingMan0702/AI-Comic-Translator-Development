@@ -148,3 +148,14 @@ export async function clearAllCache() {
     tx.oncomplete = resolve;
   });
 }
+
+export async function deleteCachedTranslation(cacheKey, targetLang) {
+  const db = await getDB();
+  const key = `${cacheKey}_${targetLang}`;
+  return new Promise((resolve) => {
+    const tx = db.transaction(TRANSLATION_STORE, 'readwrite');
+    tx.objectStore(TRANSLATION_STORE).delete(key);
+    tx.oncomplete = resolve;
+    tx.onerror = resolve; // 找不到也不報錯
+  });
+}
