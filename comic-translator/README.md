@@ -1,25 +1,28 @@
-# Comic Translator — AI 漫畫即時翻譯 Chrome Extension
+# 📖 Comic Translator — AI 漫畫即時翻譯 Chrome Extension
 
-![版本](https://img.shields.io/badge/版本-1.0.0-blue)
-![Manifest](https://img.shields.io/badge/Manifest-V3-green)
-![Gemini](https://img.shields.io/badge/Gemini-2.0%20Flash-orange)
-![License](https://img.shields.io/badge/License-MIT-yellow)
+![版本](https://img.shields.io/badge/版本-1.3.0-blue?style=flat-square)
+![Manifest](https://img.shields.io/badge/Manifest-V3-green?style=flat-square)
+![Gemini](https://img.shields.io/badge/Gemini-3.x%20Flash%20Series-orange?style=flat-square)
+![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)
 
-> 使用 **Google Gemini 2.0 Flash Vision AI** 即時翻譯漫畫圖片中的文字，並以透明文字覆蓋層顯示在原圖上，讓你無需離開漫畫網站即可閱讀翻譯內容。
+> 使用 **Google Gemini 3.x Flash Vision AI** 原生多圖視覺辨識技術，即時翻譯漫畫圖片中的台詞與旁白，並以智慧自適應文字框覆蓋在原圖上。無需離開漫畫網站，即可享受零障礙閱讀體驗！
 
 ---
 
-## ✨ 功能特色
+## ✨ 核心亮點功能
 
 | 功能 | 說明 |
-|------|------|
-| 🔍 **AI OCR 辨識** | 使用 Gemini Vision 辨識對話框、旁白、擬聲詞位置 |
-| 📍 **精準 Overlay** | 翻譯文字以透明覆蓋層對齊原文位置，保留原圖視覺 |
-| 🌐 **五語言支援** | 繁體中文、簡體中文、英文、日文、韓文 |
-| ⚡ **雙層快取** | OCR 與翻譯分別快取（IndexedDB），避免重複 API 呼叫 |
-| 🤖 **自動翻譯模式** | MutationObserver 監聽新圖片，滾動載入自動翻譯 |
-| 🔒 **純前端架構** | 無後端伺服器，所有處理在瀏覽器端完成 |
-| 🚦 **並發控制** | Queue + Rate Limiter，最多同時處理 3 張圖片 |
+| :--- | :--- |
+| 🚀 **3 合 1 原生多圖批次** | 1 次 API 請求同時處理 3~4 張漫畫圖片，API 消耗直接減少 **75%**，徹底免疫跨域 CORS！ |
+| 🤖 **5 大黃金模型自動輪替** | 整合 `3.7 Flash`、`3.6 Flash`、`3.5 Flash`、`3.5 Flash Lite` (500 RPD)、`3.1 Flash Lite` (500 RPD)，遇限制自動無縫跳轉，每日單 Key 擁逾 **1,060+ 次** 請求配額！ |
+| 🔑 **多 Key / 多專案平行分流** | 支援填入多組 Google Project API Key，自動指針輪替與安全冷卻，支援最多 3 個 Worker 平行極速翻譯。 |
+| 🎚️ **字體大小即時滑桿 (1%~300%)** | 於 Popup 即時自由拖動縮放比例，頁面上已翻譯的對白氣泡會即時同步放大/縮小，無需重譯！ |
+| ✋ **對白氣泡互動調整** | 對話框可**自由拖曳移動**，懸停**右上角把手可拖曳手動縮放寬高**，**雙擊滑鼠左鍵**即可自訂編輯文字。 |
+| ↺ **單圖強制清除快取刷新** | 懸停任一圖片左上角點擊 `↺` 按鈕，自動清除該圖 IndexedDB 快取並強制重新向 AI 發起翻譯。 |
+| 🌙 **深淺色 (Dark/Light) 雙 UI** | Popup 右上角支援 🌙 / ☀️ 一鍵切換深色與淺色介面，並自動記憶使用者偏好。 |
+| 💡 **右上角使用小提示** | 整合常見使用訣竅（包含漏翻處理、速度排隊機制說明等）。 |
+| 📋 **結構化除錯日誌** | 內建模型狀態與異常診斷器，可隨時點擊「檢視除錯日誌」查看各模型運作狀況。 |
+| 🌐 **多國語言支援** | 繁體中文、簡體中文、英文、日本語、한국어。 |
 
 ---
 
@@ -27,30 +30,28 @@
 
 ```
 comic-translator/
-├── manifest.json               # Chrome Extension 配置（Manifest V3）
-├── README.md                   # 本說明文件
+├── manifest.json               # Chrome Extension 配置（Manifest V3，版本 1.3.0）
+├── README.md                   # 專案說明文件
 │
-├── popup/                      # Extension Popup 介面
-│   ├── popup.html              # 主介面 HTML
-│   ├── popup.js                # Popup 邏輯（設定、統計、按鈕）
-│   └── popup.css               # Material Design 風格樣式
+├── popup/                      # 擴充功能彈出視窗
+│   ├── popup.html              # 主介面 HTML（支援深淺色、小提示選單、模型狀態列）
+│   ├── popup.js                # Popup 邏輯（多 Key 管理、字體滑桿、日誌檢視器）
+│   └── popup.css               # Material Design + Dark Mode 樣式
 │
-├── content/                    # 注入頁面的腳本
-│   ├── content.js              # 圖片偵測、Overlay 管理、訊息處理
-│   ├── overlay.js              # Overlay 建立工具函式（備用模組）
-│   └── content.css             # Overlay 層樣式
+├── content/                    # 網頁注入腳本
+│   ├── content.js              # 原生多圖批次打包、氣泡拖曳縮放、單圖刷新
+│   └── content.css             # 自適應氣泡、縮放把手、刷新按鈕樣式
 │
-├── background/                 # Service Worker
-│   └── background.js           # 翻譯佇列、API 呼叫、快取協調
+├── background/                 # 背景 Service Worker
+│   └── background.js           # 多 Worker 佇列、多 Key 輪替、冷卻保護閥
 │
-├── lib/                        # 共用函式庫
-│   ├── gemini.js               # Gemini API 封裝（OCR + 翻譯）
-│   ├── translator.js           # TranslationQueue 類別（備用）
-│   ├── storage.js              # Chrome Storage + IndexedDB 封裝
-│   └── cache.js                # 圖片 Hash（SHA-256）+ Base64 工具
+├── lib/                        # 核心共用模組
+│   ├── gemini.js               # Gemini Interactions API 封裝、5 模型池、標準 box_2d
+│   ├── storage.js              # Chrome Storage + IndexedDB 快取封裝
+│   └── cache.js                # SHA-256 圖片 Hash 計算
 │
 └── assets/
-    └── icons/                  # Extension 圖示
+    └── icons/                  # 專屬 3D 漫畫「漫」字高清晰圖示
         ├── icon16.png
         ├── icon48.png
         └── icon128.png
@@ -58,252 +59,74 @@ comic-translator/
 
 ---
 
-## 🚀 安裝方式
+## 🚀 安裝與使用方式
 
-### 方法一：開發者模式直接載入（推薦用於開發測試）
+### 步驟 1：載入擴充功能至 Chrome
 
-1. 下載或 clone 本專案至本機
-2. 開啟 Chrome，網址列輸入 `chrome://extensions/`
-3. 右上角開啟「**開發人員模式**」(Developer mode)
-4. 點擊「**載入未封裝項目**」(Load unpacked)
-5. 選擇 `comic-translator` **資料夾**（包含 `manifest.json` 的那層）
-6. Extension 圖示出現在工具列即安裝成功 ✅
-
-### 方法二：打包成 .crx 檔案（用於分發）
-
-```powershell
-# 在 Chrome Extensions 頁面操作：
-# 1. 前往 chrome://extensions/
-# 2. 開啟「開發人員模式」
-# 3. 點擊「封裝擴充功能」(Pack Extension)
-# 4. 選擇 comic-translator 資料夾
-# 5. 會產生 comic-translator.crx 與 comic-translator.pem
-```
-
-> ⚠️ **注意**：Chrome Web Store 正式發佈需要開發者帳號（$5 美元一次性費用）
-
-### 方法三：ZIP 壓縮（用於 Chrome Web Store 上傳）
-
-```powershell
-# PowerShell 壓縮
-Compress-Archive -Path "comic-translator\*" -DestinationPath "comic-translator-v1.0.0.zip"
-```
-
-上傳至 [Chrome Web Store 開發者後台](https://chrome.google.com/webstore/devconsole/)
+1. 下載或 Clone 本專案至本機電腦。
+2. 開啟 Chrome 瀏覽器，於網址列輸入 `chrome://extensions/`
+3. 開啟右上角的 **「開發人員模式」**（Developer mode）。
+4. 點擊左上角的 **「載入未封裝項目」**（Load unpacked）。
+5. 選擇 **`comic-translator` 資料夾**（包含 `manifest.json` 的那層目錄）。
+6. 工具列出現「漫」字專屬圖示即安裝成功 ✅！
 
 ---
 
-## ⚙️ 初次設定
+### 步驟 2：取得免費 Gemini API Key（多專案提速心法）
 
-### 步驟 1：取得 Gemini API Key
+> 💡 **提速秘訣**：推薦在同一個 Google 帳號內建立 **3 組不同 Project 的 Key**，每組專案配額獨立分開，可徹底消除速率冷卻限制！
 
-1. 前往 [Google AI Studio](https://aistudio.google.com/)
-2. 使用 **Google 帳號**登入
-3. 點擊左側「**Get API Key**」
-4. 點擊「**Create API Key**」建立新金鑰
-5. 複製 API Key（格式類似 `AIzaSy...`）
-
-> ⚡ **免費額度充足**：Gemini 2.0 Flash 每分鐘 15 次請求，每天 1,500 次，一般漫畫閱讀完全足夠
-
-### 步驟 2：設定 Extension
-
-1. 點擊 Chrome 工具列的 Extension 圖示
-2. 在「Gemini API Key」欄位貼上 API Key
-3. 點擊「**測試連線**」確認有效
-4. 點擊「**儲存**」
-5. 選擇目標翻譯語言（預設：繁體中文）
+1. 前往 **[Google AI Studio ↗](https://aistudio.google.com/)** 登入 Google 帳號。
+2. 點擊左側選單 **「Get API key」** ➜ 點擊 **「Create API key」**。
+3. 選擇 **「Create API key in new project」**（在新的專案中建立）：
+   * • 第 1 組：專案名稱填 `comic 1` ➜ 複製 Key
+   * • 第 2 組：專案名稱填 `comic 2` ➜ 複製 Key
+   * • 第 3 組：專案名稱填 `comic 3` ➜ 複製 Key
+4. 打開 Extension 視窗，將 3 組 Key 一次性貼入輸入框中（每行一組或以逗號隔開），點擊 **「＋ 新增」**。
+5. 選擇目標翻譯語言（預設：繁體中文）。
 
 ---
 
-## 📖 使用方式
-
-### 基本操作
+### 步驟 3：開始閱讀漫畫
 
 | 操作 | 方法 |
-|------|------|
-| **翻譯頁面所有漫畫** | 點擊 Popup → 「翻譯本頁漫畫」 |
-| **清除翻譯覆蓋層** | 點擊 Popup → 「清除翻譯」 |
-| **重新翻譯** | 點擊 Popup → 「重新翻譯」（清除後重新呼叫 API） |
-| **自動翻譯新圖片** | 開啟「自動翻譯新圖片」開關，滾動時自動處理 |
-| **清除快取** | Popup 底部「清除快取」（下次翻譯重新呼叫 API） |
-
-### 翻譯流程示意
-
-```
-頁面圖片
-  │
-  ▼
-Content Script 偵測（MutationObserver）
-  │  過濾 < 100×100px 的圖示
-  ▼
-Background Service Worker
-  │
-  ├─ 快取命中？──YES──► 直接使用快取結果
-  │
-  NO
-  │
-  ▼
-Gemini Phase 1：OCR + Bounding Box
-  │  回傳：[{text, x, y, width, height}]
-  │  儲存至 IndexedDB
-  ▼
-Gemini Phase 2：翻譯
-  │  回傳：[{original, translation}]
-  │  儲存至 IndexedDB
-  ▼
-Content Script 建立 Overlay
-  │  依 Bounding Box 計算縮放比例
-  ▼
-顯示透明文字覆蓋層（保留原圖）
-```
+| :--- | :--- |
+| **翻譯整頁漫畫** | 打開漫畫頁面 ➜ 點擊 Popup ➜ **「翻譯本頁漫畫」** |
+| **調整翻譯字體大小** | 在 Popup 的「翻譯設定」滑動 **「翻譯字體大小 (1%~300%)」**，頁面文字立即放大縮小 |
+| **單圖重新翻譯** | 將滑鼠懸停在圖片左上角，點擊出現的藍色 **`↺` 刷新按鈕**（自動清除該圖快取） |
+| **移動對話框** | 按住對話框任意拖曳至適當位置 |
+| **手動縮放對話框** | 滑鼠懸停對話框**右上角**，按住藍色把手拖曳調整寬高 |
+| **自訂編輯文字** | **雙擊滑鼠左鍵** 進入對話框編輯模式，直接修改文字 |
+| **切換深色/淺色模式** | 點擊 Popup 右上角 **🌙 / ☀️ 按鈕** |
+| **停止翻譯** | 點擊 Popup 內的 **「停止」按鈕**，立即斷開連線並清除 Loading 圖示 |
 
 ---
 
-## 🔧 技術架構
+## 🤖 AI 模型輪替池說明
 
-### 技術選型
+擴充套件採用 Google Interactions API 官方規範，內建 5 款高性價比 Flash 視覺模型輪替：
 
-| 技術 | 用途 |
-|------|------|
-| **Manifest V3** | 現代 Chrome Extension 架構 |
-| **Gemini 2.0 Flash** | Vision AI（OCR + 翻譯，同一模型） |
-| **MutationObserver** | 動態監聽 DOM，偵測 lazy-load 圖片 |
-| **IndexedDB** | OCR 與翻譯結果持久化快取 |
-| **Chrome Storage Local** | API Key 與使用者設定儲存 |
-| **SubtleCrypto SHA-256** | 圖片 URL Hash，作為快取 Key |
-| **Service Worker** | 背景任務佇列，並發上限 3 張 |
-
-### Gemini Prompt 策略
-
-**Phase 1 — OCR（辨識文字位置）**
 ```
-請分析漫畫圖片，找出所有文字及位置。
-回傳格式：[{"text":"原文","x":像素,"y":像素,"width":像素,"height":像素}]
-座標相對於圖片原始尺寸。若無文字回傳 []。
+[1] gemini-3.7-flash      (最新 3.7 旗艦 Flash)
+[2] gemini-3.6-flash      (主力高速模型)
+[3] gemini-3.5-flash      (穩定備援)
+[4] gemini-3.5-flash-lite (輕量版，每日享 500 次請求)
+[5] gemini-3.1-flash-lite (輕量版，每日享 500 次請求)
 ```
 
-**Phase 2 — 翻譯**
-```
-將漫畫文字翻譯成{目標語言}，保持角色語氣。
-回傳格式：[{"original":"原文","translation":"譯文"}]
-```
+* **自動故障轉移（Automatic Failover）**：任一模型若觸發 429 速率限制或配額耗盡，系統在同一次請求內會自動嘗試下一個模型，使用者翻譯完全不中斷。
+* **即時高亮反饋**：Popup 底部狀態列會每 2 秒即時顯示目前成功啟用的模型（以藍色晶片與脈動圓點高亮）。
 
 ---
 
-## ⚠️ 錯誤處理
+## 🔒 隱私與安全聲明
 
-### 常見錯誤與解決方法
-
-| 錯誤訊息 | 原因 | 解決方法 |
-|----------|------|----------|
-| `API Key 無效或無權限` | API Key 錯誤或已失效 | 重新取得 API Key |
-| `API 額度不足或請求過快` | 超過免費額度 | 等待額度重置（每天重設）或升級付費 |
-| `網路連線失敗` | 無網路或 Gemini 服務中斷 | 檢查網路；查看 [Google API 狀態](https://status.cloud.google.com/) |
-| `⚠ 警告圖示` | 圖片 CORS 限制無法讀取 | 此為網站限制，無法繞過 |
-| `無法取得圖片` | 圖片使用驗證保護 | 不支援需登入才能存取的圖片 |
-| `無法解析 JSON 回應` | Gemini 回傳格式異常 | 點擊「重新翻譯」重試 |
-
-### API 額度說明（Gemini 2.0 Flash 免費版）
-
-| 限制 | 數值 |
-|------|------|
-| 每分鐘請求數 | 15 RPM |
-| 每天請求數 | 1,500 RPD |
-| 每分鐘 Token 數 | 1,000,000 TPM |
-
-每張漫畫圖片消耗 **2 次 API 請求**（OCR + 翻譯），快取後不重複消耗。
+* **純本機端執行**：無任何中介後端伺服器，API Key 與使用者設定僅儲存在瀏覽器的 `chrome.storage.local`。
+* **快取安全**：翻譯結果僅儲存於本機瀏覽器的 IndexedDB 資料庫中。
+* **零資料收集**：擴充功能不收集任何個人隱私資訊，不包含任何第三方追蹤代碼。
 
 ---
 
-## 🛠️ 支援網站
+## 📄 開源授權
 
-| 網站類型 | 支援狀況 | 備註 |
-|----------|----------|------|
-| 靜態 `<img>` 圖片 | ✅ 完整支援 | |
-| Lazy-load 圖片 | ✅ 支援 | 自動解析 `data-src`, `data-lazy` 等屬性 |
-| `<picture>` 元素 | ✅ 支援 | |
-| AJAX 動態載入 | ✅ 支援 | 透過 MutationObserver 偵測 |
-| Canvas 渲染漫畫 | ❌ 不支援 | WebGL 播放器無法存取圖片資料 |
-| SVG 格式圖片 | ❌ 不支援 | Gemini 不支援 SVG 格式 |
-| 需驗證的圖片 | ❌ 不支援 | CORS 限制 |
-
-### 測試網站
-
-| 網站 | 狀態 |
-|------|------|
-| [MangaDex](https://mangadex.org) | ✅ 支援 |
-| [Webtoons](https://www.webtoons.com) | ✅ 支援 |
-| [Bilibili 漫畫](https://manga.bilibili.com) | ✅ 支援（需登入） |
-| [ComicWalker](https://comic-walker.com) | ✅ 支援 |
-| [一般圖片站（Imgur 等）](https://imgur.com) | ✅ 支援 |
-
----
-
-## 🔒 隱私與安全
-
-- **API Key 儲存**：使用 Chrome Storage Local（加密儲存，僅限本機）
-- **圖片資料**：僅在翻譯時傳送至 Gemini API，不儲存於任何伺服器
-- **快取資料**：OCR 與翻譯結果僅儲存在本機 IndexedDB
-- **無追蹤**：不收集任何使用者資料，不發送遙測
-
----
-
-## 🛠️ 開發指南
-
-### 本機開發
-
-```powershell
-# 1. Clone 專案
-git clone <your-repo-url>
-cd comic-translator
-
-# 2. 在 Chrome 載入（開發者模式）
-# chrome://extensions/ → 載入未封裝項目 → 選擇資料夾
-
-# 3. 修改程式碼後，在 chrome://extensions/ 點擊重新整理圖示
-```
-
-### 目錄說明
-
-```
-lib/gemini.js      → 修改 Gemini Prompt 或換用其他模型
-lib/storage.js     → 修改快取策略或新增設定項目
-content/content.js → 修改圖片偵測邏輯或 Overlay 樣式
-background/background.js → 修改並發數量或 Rate Limit 設定
-popup/             → 修改使用者介面
-```
-
-### 調整並發數量
-
-在 `background/background.js` 修改：
-
-```javascript
-const MAX_CONCURRENT = 3;      // 同時最多處理 3 張圖片
-const REQUEST_INTERVAL_MS = 600; // 兩次 API 請求間最小間隔
-```
-
-### 更換 Gemini 模型
-
-在 `lib/gemini.js` 修改：
-
-```javascript
-const MODEL = 'gemini-2.0-flash'; // 可改為 gemini-2.5-flash 等
-```
-
----
-
-## 📄 License
-
-MIT License
-
-Copyright (c) 2026 Comic Translator
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
-
----
-
-*Made with ❤️ using Google Gemini AI*
+本專案採用 [MIT License](LICENSE) 授權開源。
